@@ -17,7 +17,7 @@ python -m pip install pymysql
 ```
 ## Screenshots
 
-![App Screenshot]([https://via.placeholder.com/468x300?text=App+Screenshot+Here](https://github.com/Cyber-Zypher/Hotel-Management-System/blob/main/WhatsApp%20Image%202023-08-14%20at%206.33.42%20AM.jpeg))
+![App Screenshot](https://github.com/Cyber-Zypher/Hotel-Management-System/blob/main/WhatsApp%20Image%202023-08-14%20at%206.33.42%20AM.jpeg))
 
 ## Initialize the database
 ```
