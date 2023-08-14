@@ -34,20 +34,6 @@ CREATE TABLE bookings (
 );
 ```
 
-## Instructions
-
-- After installing the needed libraries. Edit the `data.csv` file to load the questions and its answers.
-
-- Then, run the `load_data.py` script to load the questions and answers to the SQL database.
-
-- Don't run the `load_data.py` more than once, It will cause duplicate questions and cause clutter on your database.
-
-- Then Finally, run the `app.py` to play the quiz.
-
-
 ## Authors
 
 - [@sidharth_everett](https://github.com/Cyber-Zypher)
-- [@sindhu_vaibhav_KL](https://www.instagram.com/sindhuvaibhav2007/)
-- [And our friends @Medusa Infosystems International](https://www.instagram.com/themedusaclan_official/)
-
