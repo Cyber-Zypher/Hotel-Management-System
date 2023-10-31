@@ -1,13 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
-import pymysql
+import mysql.connector
 
 class HotelBookingSystem:
     def __init__(self, root):
         self.root = root
         self.root.title("Hotel Booking System")
-
         self.root.geometry("500x400")
 
         self.label_name = tk.Label(root, text="Guest Name:")
@@ -39,22 +38,23 @@ class HotelBookingSystem:
         self.room_type_combobox = ttk.Combobox(root, textvariable=self.selected_room_type, values=self.room_type_options)
         self.room_type_combobox.pack()
 
-        # self.entry_room = tk.Entry(root)
-        # self.entry_room.pack()
-
         self.button_book = tk.Button(root, text="Book Room", command=self.book_room)
         self.button_book.pack()
 
         self.button_display = tk.Button(root, text="Display Bookings", command=self.display_bookings)
         self.button_display.pack()
 
-        self.db_connection = pymysql.connect(
+        # Connect to the MySQL database
+        self.db_connection = mysql.connector.connect(
             host="localhost",
             user="UNAME",
-            password="PASSWD",
+            password="PASSWORD",
             database="DB_NAME"
         )
-    
+
+        # Check if the tables exist, and create them if needed
+        self.create_tables()
+
     def auto_format_date(self, sv):
         value = sv.get()
         if len(value) == 4 or len(value) == 7:
@@ -72,41 +72,41 @@ class HotelBookingSystem:
             return
 
         try:
-            with self.db_connection.cursor() as cursor:
-                sql = "INSERT INTO bookings (guest_name, check_in, check_out, room_type) VALUES (%s, %s, %s, %s)"
-                cursor.execute(sql, (guest_name, check_in, check_out, room_type))
-                self.db_connection.commit()
-                messagebox.showinfo("Success", "Room booked successfully!")
-        except pymysql.Error as e:
+            cursor = self.db_connection.cursor()
+            sql = "INSERT INTO bookings (guest_name, check_in, check_out, room_type) VALUES (%s, %s, %s, %s)"
+            cursor.execute(sql, (guest_name, check_in, check_out, room_type))
+            self.db_connection.commit()
+            cursor.close()
+            messagebox.showinfo("Success", "Room booked successfully!")
+        except mysql.connector.Error as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
-    
+
     def display_bookings(self):
         try:
-            with self.db_connection.cursor() as cursor:
-                cursor.execute("SELECT * FROM bookings")
-                bookings = cursor.fetchall()
-                
-                if bookings:
-                    self.display_frame = tk.Toplevel(self.root)
-                    self.display_frame.title("Bookings")
-                    
-                    self.display_frame.geometry("860x500")  # Adjust the size as needed
-                    
-                    scrollbar = tk.Scrollbar(self.display_frame)
-                    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-                    
-                    listbox = tk.Listbox(self.display_frame, yscrollcommand=scrollbar.set, width=80)
-                    for booking in bookings:
-                        listbox.insert(tk.END, f"ID: {booking[0]}, Guest: {booking[1]}, Check-in: {booking[2]}, Check-out: {booking[3]}, Room Type: {booking[4]}")
-                    
-                    listbox.pack(side=tk.LEFT, fill=tk.BOTH)
-                    scrollbar.config(command=listbox.yview)
-                    
-                    delete_button = tk.Button(self.display_frame, text="Delete Selected", command=lambda: self.delete_booking(listbox))
-                    delete_button.pack()
-                else:
-                    messagebox.showinfo("Info", "No bookings found.")
-        except pymysql.Error as e:
+            cursor = self.db_connection.cursor()
+            cursor.execute("SELECT * FROM bookings")
+            bookings = cursor.fetchall()
+
+            if bookings:
+                self.display_frame = tk.Toplevel(self.root)
+                self.display_frame.title("Bookings")
+                self.display_frame.geometry("860x500")
+
+                scrollbar = tk.Scrollbar(self.display_frame)
+                scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+                listbox = tk.Listbox(self.display_frame, yscrollcommand=scrollbar.set, width=80)
+                for booking in bookings:
+                    listbox.insert(tk.END, f"ID: {booking[0]}, Guest: {booking[1]}, Check-in: {booking[2]}, Check-out: {booking[3]}, Room Type: {booking[4]}")
+
+                listbox.pack(side=tk.LEFT, fill=tk.BOTH)
+                scrollbar.config(command=listbox.yview)
+
+                delete_button = tk.Button(self.display_frame, text="Delete Selected", command=lambda: self.delete_booking(listbox))
+                delete_button.pack()
+            else:
+                messagebox.showinfo("Info", "No bookings found.")
+        except mysql.connector.Error as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
 
     def delete_booking(self, listbox):
@@ -114,20 +114,41 @@ class HotelBookingSystem:
         if not selected_index:
             messagebox.showerror("Error", "Select a booking to delete.")
             return
-        
+
         booking_info = listbox.get(selected_index)
-        booking_id = booking_info.split(",")[0].split(":")[1].strip()  # Extracting the booking ID
-        
+        booking_id = booking_info.split(",")[0].split(":")[1].strip()
+
         try:
-            with self.db_connection.cursor() as cursor:
-                sql = "DELETE FROM bookings WHERE booking_id = %s"
-                cursor.execute(sql, (booking_id,))
-                self.db_connection.commit()
-                messagebox.showinfo("Success", "Booking deleted successfully.")
-                listbox.delete(selected_index)
-        except pymysql.Error as e:
+            cursor = self.db_connection.cursor()
+            sql = "DELETE FROM bookings WHERE booking_id = %s"
+            cursor.execute(sql, (booking_id,))
+            self.db_connection.commit()
+            cursor.close()
+            messagebox.showinfo("Success", "Booking deleted successfully.")
+            listbox.delete(selected_index)
+        except mysql.connector.Error as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
-        
+
+    def create_tables(self):
+        try:
+            cursor = self.db_connection.cursor(dictionary=True)
+            cursor.execute("SHOW TABLES LIKE 'bookings'")
+            result = cursor.fetchone()
+            if not result:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS bookings (
+                        booking_id INT AUTO_INCREMENT PRIMARY KEY,
+                        guest_name VARCHAR(255),
+                        check_in DATE,
+                        check_out DATE,
+                        room_type VARCHAR(50)
+                    )
+                """)
+                self.db_connection.commit()
+            cursor.close()
+        except mysql.connector.Error as e:
+            messagebox.showerror("Error", f"An error occurred while creating tables: {e}")
+
     def run(self):
         self.root.mainloop()
 
